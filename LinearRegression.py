@@ -1,34 +1,45 @@
-import numpy as np
+import torch
 
 class LinearRegression:
-    def __init__(self, learning_rate=0.01):
+    def __init__(self, learning_rate=0.01, num_epochs=100):
         self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.weights = None
+        self.bias = None
 
-    def loss(self, y_pred, y_actual):
-        return np.mean(0.5 * (y_pred - y_actual) ** 2)
+    def fit(self, X, y):
+        num_samples, num_features = X.shape
+        # Initialize weights and bias
+        self.weights = torch.randn((num_features, 1), dtype=torch.float64, requires_grad=True)
+        self.bias = torch.zeros(1, dtype=torch.float64, requires_grad=True)
 
-    def fit(self, X, y, num_iter = 1000):
-        n_samples, n_features = X.shape
-        self.weights = np.random.randn(n_features, 1)  # Initialize weights
-        self.bias = 0.0  # Initialize bias
+        for epoch in range(self.num_epochs):
+            # Forward pass: Calculate predictions
+            y_predicted = X @ self.weights + self.bias
 
-        for i in range(num_iter):
-            # Compute predictions
-            predicted = np.sum((X @ self.weights),self.bias)
-            
-            # Compute gradients
-            dw = (2 / n_samples) * X.T @ (predicted - y)
-            db = (2 / n_samples) * np.sum((predicted - y))
-            
+            # Calculate loss (Mean Squared Error)
+            loss = self.loss(y, y_predicted)
+
+            # Backward pass: Compute gradients
+            loss.backward()
+
             # Update weights and bias
-            self.weights -= self.learning_rate * dw
-            self.bias -= self.learning_rate * db
-            
-            # Compute and print loss
-            loss = self.loss(predicted, y)
-            print(f"Loss: {loss} for epoch {i}")
+            with torch.no_grad():
+                self.weights -= self.learning_rate * self.weights.grad
+                self.bias -= self.learning_rate * self.bias.grad
 
-        return self.weights, self.bias
+                # Zero the gradients after updating
+                self.weights.grad.zero_()
+                self.bias.grad.zero_()
+
+            if (epoch + 1) % 10 == 0:
+                print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss.item()}')
+
+    def loss(self, y, y_pred):
+        return torch.mean((y - y_pred) ** 2)  # Mean Squared Error
 
     def predict(self, X):
-        return (X @ self.weights) + self.bias
+        return X @ self.weights + self.bias  # Return predictions
+
+    def mse(self, y_true, y_pred):
+        return torch.mean((y_true - y_pred) ** 2)  # Mean Squared Error
