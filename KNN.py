@@ -5,14 +5,17 @@ class KNN:
         self.k = n_neighbors
         self.distance_metric = distance_metric
     
-    def fit(self, X, y):
-        self.X_train = X
-        self.y_train = y
-    
+    def fit(self, X, y, loss_history=None):
+        # Ensure X and y are tensors
+        self.X_train = torch.tensor(X, dtype=torch.float32) if not isinstance(X, torch.Tensor) else X
+        self.y_train = torch.tensor(y, dtype=torch.int64) if not isinstance(y, torch.Tensor) else y
+
     def predict(self, X):
+        # Ensure X is a tensor
+        X = torch.tensor(X, dtype=torch.float32) if not isinstance(X, torch.Tensor) else X
         y_pred = [self._predict(x) for x in X]
         return torch.tensor(y_pred)
-    
+
     def _predict(self, x):
         # Compute distances between x and all examples in the training set
         distances = self._compute_distances(x)
@@ -20,23 +23,24 @@ class KNN:
         # Sort by distance and return indices of the first k neighbors
         k_indices = torch.argsort(distances)[:self.k]
         k_nearest_labels = self.y_train[k_indices]
-        
+
+        # Convert k_nearest_labels to integer type before bincount
+        k_nearest_labels = k_nearest_labels.to(torch.int64)  # Ensure it's int64
+
         # Return the most common class label among the k neighbors
         most_common = torch.bincount(k_nearest_labels).argmax()
         return most_common.item()
     
     def _compute_distances(self, x):
         x = x.unsqueeze(0)  # Add a dimension to x for broadcasting
-        
+
+        # Compute distance based on the selected metric
         if self.distance_metric == 'euclidean':
-            # Compute the Euclidean distance
             distances = torch.sqrt(torch.sum((self.X_train - x) ** 2, dim=1))
         elif self.distance_metric == 'manhattan':
-            # Compute the Manhattan distance
             distances = torch.sum(torch.abs(self.X_train - x), dim=1)
         elif self.distance_metric == 'minkowski':
-            # Compute the Minkowski distance with p=3 (you can adjust p)
-            p = 3
+            p = 3  # You can adjust p
             distances = torch.pow(torch.sum(torch.abs(self.X_train - x) ** p, dim=1), 1/p)
         else:
             raise ValueError("Unsupported distance metric.")

@@ -1,13 +1,13 @@
 import torch
 
 class LinearRegression:
-    def __init__(self, learning_rate=0.01, num_epochs=100):
+    def __init__(self, learning_rate=0.01, num_epochs=1000):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.weights = None
         self.bias = None
 
-    def fit(self, X, y):
+    def fit(self, X, y,loss_history=None):
         num_samples, num_features = X.shape
         # Initialize weights and bias
         self.weights = torch.randn((num_features, 1), dtype=torch.float64, requires_grad=True)
@@ -19,7 +19,8 @@ class LinearRegression:
 
             # Calculate loss (Mean Squared Error)
             loss = self.loss(y, y_predicted)
-
+            if loss_history is not None:
+                loss_history.append(loss.item())
             # Backward pass: Compute gradients
             loss.backward()
 
