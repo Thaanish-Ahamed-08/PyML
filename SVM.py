@@ -9,7 +9,7 @@ class SVM:
         self.w = None  # Weight vector
         self.b = None  # Bias term
 
-    def fit(self, X, y):
+    def fit(self, X, y,loss_history=None):
         """Train the SVM model using gradient descent."""
         num_samples, num_features = X.shape
         self.w = torch.randn(num_features, dtype=torch.float64, requires_grad=True)  # Initialize weights
@@ -25,6 +25,8 @@ class SVM:
                 condition = y_i[idx] * (torch.dot(x_i, self.w) - self.b)
 
                 loss = torch.max(torch.tensor(0.0, dtype=torch.float64), 1 - condition)
+                if loss_history is not None:
+                    loss_history.append(loss.item())
                 loss.backward()
                 
                 with torch.no_grad():
@@ -35,8 +37,11 @@ class SVM:
 
     def predict(self, X):
         """Predict class labels for samples in X."""
-        # Compute the decision boundary: w*X - b
-        sign = (X @ self.w) - self.b
+        # Ensure the input X is a 2D tensor
+        if X.ndim == 1:
+            X = X.unsqueeze(0)  # Add a dimension if X is a single sample
+
+        sign = (X @ self.w.view(-1, 1)) - self.b  # Ensure w is reshaped correctly
         return torch.sign(sign)
 
     def score(self, X, y):

@@ -19,7 +19,7 @@ class DecisionTree:
         self.n_features = n_features
         self.root = None
 
-    def fit(self, X, y):
+    def fit(self, X, y,loss_history=None):
         X = torch.tensor(X, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.int64)
         self.n_features = X.shape[1] if not self.n_features else min(X.shape[1], self.n_features)
@@ -106,6 +106,9 @@ class DecisionTree:
     def _traverse_tree(self, x, node):
         if node.is_leaf_node():
             return node.value
+        # Check if the feature index is valid
+        if node.feature >= x.shape[0]:
+            raise IndexError(f"Feature index {node.feature} is out of bounds for input with shape {x.shape}")
 
         if x[node.feature] <= node.threshold:
             return self._traverse_tree(x, node.left)
